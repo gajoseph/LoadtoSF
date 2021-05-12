@@ -1,6 +1,6 @@
  mkfifo /mount/to/save/data/files/fifo_file_name
  gzip -c </mount/to/save/data/files/fifo_file_name > /mount/to/save/data/files/file_name.del.gz &
- db2 'connect to dpdwhs01'
+ db2 'connect to dbname'
  db2 "export to /mount/to/save/data/files/fifo_file_name of del select <list of columns>
   FROM myschema.mytable
   where  <condition >
