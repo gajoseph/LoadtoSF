@@ -1,0 +1,203 @@
+# This is a sample Python script.
+
+# Press Shift+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import os
+import logging
+def cleanup_fld(qvd_load):
+    qvd_load = qvd_load.replace("LOAD", "").strip()
+    qvd_flds = qvd_load.split("\n")
+    new_qvd_flds = []
+    for fld in qvd_flds:
+        if not fld.startswith("//"):
+            fld_lines = fld.split(",\n")
+            for fld_line in fld_lines:
+                if not fld_line.strip().startswith("//") and not (fld_line.strip()==""):
+                    new_qvd_flds.append(fld_line.strip())
+
+    return '\n'.join([str(elem) for elem in new_qvd_flds])
+
+def load_qvd_build_info(qvd_load):
+    qvd_load = qvd_load.replace("LOAD", "").strip()
+    qvd_flds = qvd_load.split("\n")
+    new_qvd_flds = []
+    for fld in qvd_flds:
+        if not fld.startswith("//"):
+            fld_lines = fld.split(",\n")
+            for fld_line in fld_lines:
+                if not fld_line.strip().startswith("//") and not (fld_line.strip() == ""):
+                    new_qvd_flds.append(fld_line.strip())
+    return new_qvd_flds
+    # return '\n'.join([str(elem) for elem in new_qvd_flds])
+
+
+def write_2_qli_app_name_tab_qvd_name(str):
+    pass
+
+def print_hi(name):
+    # Use a breakpoint in the code line below to debug your script.
+    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    log_format = '%(asctime)s - [%(levelname)s] - [%(filename)s->%(funcName)s():%(lineno)d] - %(message)s'
+    log_date_format = '[%m/%d/%Y %I:%M:%S %p]'
+
+    logging.basicConfig(
+        level=logging.INFO
+        , format=log_format
+        , datefmt=log_date_format
+    )
+
+    tabs = {}
+    qvd_dict= {}
+    new_tabs = {}
+
+    with open(lists_path, "r", encoding="utf8")  as f:
+        filenames = f.readlines()
+    for filename in filenames:
+        filename = filename.strip()+ ".txt"
+    #for filename in os.listdir(path):
+        #logging.info("  {}  ".format(filename))
+        tabs = {}
+        qvd_dict = {}
+        qvd_build_dict ={}
+        new_tabs = {}
+        with open(os.path.join(path, filename), "r", encoding="utf8" )  as f:
+            lines = f.readlines()
+
+        logging.info("--GEO--C-- file name {}\n".format(filename))
+        sql.write("--GEO--C-- file name {}\n".format(filename))
+        for  l in lines:
+            
+            #print(0, l.split("///$tab"))
+            temp = l.split("///$tab")
+            for ll in temp:
+                #print(ll)
+                tabs[ll.split("\\r\\n")[0]] = '\n'.join(ll.split("\\r\\n")[1:])
+        """loop thru each tabs 
+        """
+        tmpe_tab= {}
+        for key, value in tabs.items():
+            
+            lines_in_tabs = value.split("\n")
+            new_lines_intab = []
+            for lintab in lines_in_tabs:
+                if not lintab.strip().startswith("//") and not lintab.strip()=="":
+                    new_lines_intab.append(lintab)
+            tabs[key] = '\r\n'.join([str(elem) for elem in new_lines_intab])
+
+
+        for key, value in tabs.items():
+            qvd_name= key
+            prev_qvd_name = key
+            inc = 0
+            #if ("MDM" in key or "MDM" in value) and "(qvd)" in value:
+
+
+            qvds = value.split("(qvd)")
+
+            for qvd in qvds:
+                inc=inc + 1
+                qvd_name = prev_qvd_name
+                qvd_load = qvd
+                # replace the 1st \r\r
+
+                qvd_script_lines = qvd.strip().split("\r\n")
+                if len(qvd_script_lines) > 1:
+                    if qvd_script_lines[0].strip() == ";":
+                        qvd_script_lines.pop(0)
+                    if qvd_script_lines[0].strip().endswith(":"):
+                        qvd_name = qvd_script_lines[0].split(":")[0].replace("[", "").replace("]", "")
+                        prev_qvd_name = qvd_name
+                        inc= 0
+                    else:
+                        if qvd_name== prev_qvd_name:
+                            qvd_name = "{}_{}".format(prev_qvd_name,inc)
+
+                    from_clause = qvd_load.split("FROM")
+                    if len(from_clause) > 1:
+                        from_clause = qvd_load.split("FROM")[-1].replace("lib:/", "").replace("[", "").replace("]","")
+                        #logging.info("from_clause = {}".format(from_clause))
+                        if ".qvd" in from_clause:
+                            logging.info("from_clause has qvd {}".format(from_clause))
+                            qvd_load = cleanup_fld(qvd_load.replace("\\t", "\t"))
+
+                            qvd_dict["{}.{}".format(key, qvd_name)] = {
+                                from_clause.split("/")[-1].strip(): qvd_load.replace("\t", "\t"),
+                                "qlik_tab_name": key,
+                                "qlik_full_tab_name": qvd_load.split("FROM")[-1] or " noval"
+                                }
+
+                            qlik_tab_name ="--GEO--C-- qlik_tab_name: {}\n".format(key)
+                            qvd_name = "--GEO--C-- qvd_name: {}\n".format(qvd_name)
+
+                            sql.write(qvd_name)
+                            sql.write(qlik_tab_name)
+
+                            print(key, "--GEO--C--  qvd name", qvd_name, qvd_load or " noval", "\n\n --GEORGE--END---")
+
+                        else:
+                            qvd_build_dict["{}".format(qvd_name)] = load_qvd_build_info(qvd_load.replace("\\t", "\t"))
+
+
+            #else:
+            #    new_tabs[key] = value
+
+        #print(qvd_dict)
+        print(qvd_build_dict)
+
+        for qvd_name in qvd_dict.keys():
+            print(qvd_name, qvd_dict[qvd_name]["qlik_tab_name"], qvd_dict[qvd_name], qvd_dict[qvd_name]["qlik_full_tab_name"] )
+            for mdm_qvd_name, mdm_qvd_flds in qvd_dict[qvd_name].items():
+                if mdm_qvd_name !="qlik_tab_name":
+
+                    sql.write("------------------------------------------------------------------------------------------------\n")
+                    sql.write("--GEO--C-- tab.qvd_name {}\n".format(  qvd_name))
+
+
+                    sql.write(
+                        "insert into qlik_app_qvd_flds values('{}', '{}', '{}', '{}');\n\n".format(
+                            filename.replace(".txt", "")
+                            ,   qvd_name,  mdm_qvd_name.upper().replace(".QVD", "") + ".qvd",
+                            mdm_qvd_flds.replace("'", "''"))
+
+                    )
+
+                    print( "insert into qlik_app_qvd_flds values('{}', '{}', '{}', '{}');\n\n".format(
+                            filename.replace(".txt", "")
+                            ,   qvd_name,  mdm_qvd_name.upper().replace(".QVD", "") + ".qvd",
+                            mdm_qvd_flds.replace("'", "''")))
+
+                    qli_app_name_tab_qvd_name.write('{}, {}, {}, {}\n'.format(
+                            filename.replace(".txt", "")
+                            , qvd_name, mdm_qvd_name.upper().replace(".QVD", "") + ".qvd"
+                            , qvd_dict[qvd_name]["qlik_full_tab_name"])
+                        )
+
+        for qvd_name in qvd_build_dict.keys():
+            print(qvd_name, qvd_build_dict[qvd_name])
+            for qvd_col in qvd_build_dict[qvd_name]:
+                sql.write(
+                    "------------------------------------------------------------------------------------------------\n")
+                sql.write("--GEO--C-- tab.qvd_name {}\n".format(qvd_name))
+
+                sql.write(
+                    "insert into qvd_flds values('{}', '{}');\n\n".format(
+                        qvd_name, qvd_col)
+
+                )
+
+            qli_app_name_tab_qvd_name.write('{}, {}, {}, {}\n'.format(
+                filename.replace(".txt", "")
+                , qvd_name, mdm_qvd_name.upper().replace(".QVD", "") + ".qvd"
+                , qvd_build_dict[qvd_name])
+            )
+
+        sql.close()
+        qli_app_name_tab_qvd_name.close()
+
+
+
+# Press the green button in the gutter to run the script.
+if __name__ == '__main__':
+    print_hi('PyCharm')
+
+# See PyCharm help at https://www.jetbrains.com/help/pycharm/
