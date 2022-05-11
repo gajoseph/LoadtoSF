@@ -1,0 +1,117 @@
+import logging
+
+from sqlalchemy import create_engine
+
+
+class dbLoader():
+    """":parameter
+        Loads data to postgres db
+
+    """
+
+    db_connection = None
+    insert_sql = ""
+
+
+    def __del__(self):
+        logging.info('Destructor called, for object :{}'.format(self.__class__.__name__))
+        if self.db_connection is not None:
+            self.db_connection.dispose()
+
+    def __init__(self, __prop_dict):
+        """
+            initialize (●__●)
+        """
+        logging.info('Constructor called, for object : {}'.format(self.__class__.__name__))
+        self.__prop_dict = __prop_dict
+        self.init_db_conn()
+
+    def __buildDbstring__(self):
+         return "postgresql://{}:{}@{}:{}/{}".format(self.__prop_dict['pg.user']
+                                                   , self.__prop_dict['pg.password']
+                                                   , self.__prop_dict['pg.server']
+                                                   , self.__prop_dict['pg.port']
+                                                   , self.__prop_dict['pg.database'])
+
+    def init_db_conn(self):
+        try:
+            self.db_connection = create_engine(self.__buildDbstring__()
+                                               , connect_args={'options': '-csearch_path={}'.format(self.__prop_dict['pg.schema'])}
+
+                                               )
+            result_set = self.db_connection.execute(
+                "select version();")
+
+            for r in result_set:
+                logging.info(r)
+
+        except Exception as e:
+            logging.error(e)
+            logging.error("No Db connection made ")
+
+            raise e
+
+    def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
+        """
+        qlik_app_qvd_flds
+
+        :return:
+        """
+        ins_sql = """
+            insert into qlik_app_qvd_flds values(%s,%s,%s,%s)
+        """
+
+        self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
+
+    def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
+        """
+        qlik_app_qvd_flds
+
+        :return:
+        """
+        ins_sql = """
+            insert into qlik_app_qvd_flds values(%s,%s,%s,%s)
+        """
+
+        self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
+
+
+
+
+    def load_qvd_tab_columns(self, qvd_name, db_tab_name, db_tab_col):
+        """
+        qlik_app_qvd_flds
+
+        :return:
+        """
+        ins_sql = """
+            insert into QVD_tab_columns values(%s,%s,%s)
+        """
+
+        self.db_connection.execute(ins_sql, (qvd_name, db_tab_name, db_tab_col ))
+
+    def truc_qlik_apps_info(self ):
+        """
+        qlik_app_qvd_flds
+
+        :return:
+        """
+        ins_sql = """
+            truncate table qlik_app_qvd_flds
+        """
+
+        self.db_connection.execute(ins_sql)
+
+
+
+    def truc_QVD_tab_columns(self ):
+        """
+        qlik_app_qvd_flds
+
+        :return:
+        """
+        ins_sql = """
+            truncate table QVD_tab_columns
+        """
+
+        self.db_connection.execute(ins_sql)
