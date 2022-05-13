@@ -1,0 +1,87 @@
+
+with asd as (
+    select distinct a.*,replace(colname, '\n','') as N_col_name,parent_qvd, c.*,
+    
+    case when not startswith(MDM_QVD_COLS, '//') then 
+              case  when (contains(MDM_QVD_COLS, replace(colname, '\n','')) or
+                          contains(MDM_QVD_COLS, replace(colname, '\n','')) )   then
+                    // check if it partial 
+                    case when charindex(replace(colname, '\n',''), MDM_QVD_COLS) >1 then 
+                        case when Ascii(substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)-1, 1)) in (10,32,44,40,41) 
+                            and ascii(substring( MDM_QVD_COLS, charindex(   replace(colname, '\n',''), MDM_QVD_COLS ) + len(replace(colname, '\n','')), 1) )in (10,32,44,40,41)
+                            then '2'
+                        else '1.5'
+                        end 
+                    else // FWD moving
+                        case when ascii(substring( MDM_QVD_COLS, charindex(   replace(colname, '\n',''), MDM_QVD_COLS ) + len(replace(colname, '\n','')), 1) )in (10,32,44,40,41)  then 2
+                        else '1.5' end 
+                    end
+  
+                else 
+  
+                '0' end
+        else  'C'
+  
+        end as present,  case when  contains(MDM_QVD_COLS, replace(colname, '\n','')) and not startswith(MDM_QVD_COLS, '//')then '1' else '0' end as old_present,
+        (substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)-1, 1)) b4_chr, charindex(replace(colname, '\n',''), MDM_QVD_COLS),
+        substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)+ len(replace(colname, '\n','')), 1) after_chr
+         
+
+    From QVD_tab_columns a join MDM_QVD_QVD b on lower(a.qvd_name) = lower(b.child_qvd) join qlik_app_qvd_flds c on lower(b.parent_qvd) = lower(c.mdm_qvd_name) 
+    where 1=1
+   -- and QLIK_APP_NAME like 'Ariba Contracts%'
+      union 
+     select b.*,replace(colname, '\n','') as N_col_name,parent_qvd, c.*,
+      case when not startswith(MDM_QVD_COLS, '//') then 
+              case  when (contains(MDM_QVD_COLS, replace(colname, '\n','')) or
+                          contains(MDM_QVD_COLS, replace(colname, '\n','')) )   then
+                    // check if it partial 
+                    case when charindex(replace(colname, '\n',''), MDM_QVD_COLS) >1 then 
+                        case when Ascii(substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)-1, 1)) in (10,32,44,40,41) 
+                            and ascii(substring( MDM_QVD_COLS, charindex(   replace(colname, '\n',''), MDM_QVD_COLS ) + len(replace(colname, '\n','')), 1) )in (10,32,44,40,41)
+                            then '2'
+                        else '1.5'
+                        end 
+                    else // FWD moving
+                        case when ascii(substring( MDM_QVD_COLS, charindex(   replace(colname, '\n',''), MDM_QVD_COLS ) + len(replace(colname, '\n','')), 1) )in (10,32,44,40,41)  then 2
+                        else '1.5' end 
+                    end
+  
+                else 
+  
+                '0' end
+        else  'C'
+  
+        end as present ,
+   case when  contains(MDM_QVD_COLS, replace(colname, '\n','')) and not startswith(MDM_QVD_COLS, '//')then '1' else '0' end as old_present,
+        (substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)-1, 1)), charindex(replace(colname, '\n',''), MDM_QVD_COLS),
+        substring( MDM_QVD_COLS, charindex(replace(colname, '\n',''), MDM_QVD_COLS)+ len(replace(colname, '\n','')), 1)
+        
+      From qlik_app_qvd_flds c 
+        join QVD_tab_columns b on lower(b.qvd_name) = lower(c.mdm_qvd_name)  
+            left join MDM_QVD_QVD a on lower(a.child_qvd)= lower(b.qvd_name)
+      where 1=1
+  -- and QLIK_APP_QVD_NAME like '%MDM Supplier.MDM Supplier Table%'
+
+),
+qwe as (select *  from asd where old_present >= 1 ),
+pivot_tab as ( select TAB_name, N_COL_NAME as col_name, PARENT_QVD, QVD_NAME, QLIK_APP_NAME, QLIK_APP_QVD_NAME as  QLIK_APP_TAB_NAME, MDM_QVD_COLS, present
+                from qwe 
+                --where qlik_app_name = 'AS8 Inventory Quick Win Load Prep'
+             )
+
+select *  --tab_name as db_tab_name, N_col_name as db_tab_col_name,parent_QVD,QVD_NAME, QLIK_APP_QVD_NAME as QLIK_APP_local_QVD_NAME  
+From pivot_tab ---where trim(QLIK_APP_QVD_NAME) like 'MDM Supplier%'  
+where  PARENT_QVD like '1_%'
+--order by 5,6
+ 
+    pivot(sum(  present  ) for QLIK_APP_NAME in (
+    
+    
+    ))
+     as P
+
+    order by   QLIK_APP_TAB_NAME, COL_NAME
+    
+    )
+    
