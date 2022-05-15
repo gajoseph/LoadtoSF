@@ -28,6 +28,64 @@ def retun_file_content_asString( file_path):
         return ''
 
 
+
+
+def cleanup_fld(qvd_load):
+    qvd_load = qvd_load.replace("LOAD", "").strip()
+    
+#Split by /* and */ to remove commenetd blocks
+    logging.info("{} = {}".format(qvd_load[:20], "/*" in qvd_load))
+    if "/*" in qvd_load: 
+        qvd_load=qvd_load.split("/*")
+        logging.info(qvd_load[0][len(qvd_load[0])-300:len(qvd_load[0])])
+        qvd_load_botton = qvd_load[-1].split('*/')[-1]
+        logging.info(qvd_load_botton)
+        qvd_load = "\n"+qvd_load[0] + "\n"+ (qvd_load_botton)
+        logging.info(qvd_load[len(qvd_load)-1000:len(qvd_load)])
+    
+    qvd_flds = qvd_load.split("\n")
+
+    new_qvd_flds = []
+    # removing  the commented out line using // or partilly commentedout line 
+    for fld in qvd_flds:
+        
+        if not fld.startswith("//"):
+            
+            # fld_lines = fld.split(",\n")
+            # for fld_line in fld_lines:
+            #     if not fld_line.strip().startswith("//") and not (fld_line.strip() == "") :
+            if "//" in  fld:
+                logging.info(fld)
+                new_qvd_flds.append(fld.split("//")[0].strip())
+                logging.info(fld.split("//")[0].strip())
+            else:
+                new_qvd_flds.append(fld.strip())
+            
+
+    logging.info(new_qvd_flds);
+   # return '\r\n'.join([str(elem) for elem in new_qvd_flds])
+
+
+    return '\r\n'.join([str(elem) for elem in new_qvd_flds])
+
+
+
+def load_qvd_build_info(qvd_load):
+    qvd_load = qvd_load.replace("SELECT", "").strip()
+    qvd_flds = qvd_load.split("\r\n")
+    new_qvd_flds = []
+    for fld in qvd_flds:
+        if not fld.startswith("//"):
+            fld_lines = fld.split(",\r\n")
+            for fld_line in fld_lines:
+                if not fld_line.strip().startswith("//") and not (fld_line.strip() == ""):
+                    new_qvd_flds.append(fld_line.strip())
+    return new_qvd_flds
+    # return '\n'.join([str(elem) for elem in new_qvd_flds])
+
+
+
+
 def json_extract(obj, key):
     """Recursively fetch values from nested JSON."""
     arr = []
