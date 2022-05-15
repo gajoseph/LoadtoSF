@@ -1,4 +1,20 @@
 
+drop table  qvd_tab_columns;
+create table qvd_tab_columns(qlik_app_name varchar(100), qlik_tab_name varchar(200), qlik_conn_name varchar(200), qlik_qvd_name varchar(100), db_tab_name varchar(200), db_col_name varchar(200))
+
+
+Select * From qvd_tab_columns where qlik_app_name = 'AS8 - Inventory Optimization'
+
+select * from qvd_tab_columns
+
+select * from qlik_app_qvd_flds
+drop table qlik_app_qvd_flds;
+create table qlik_app_qvd_flds(qlik_app_name varchar(100), qlik_tab_name varchar(200), qlik_app_local_qvd_name varchar(200), qlik_qvd_name varchar(100), qlik_qvd_cols varchar)
+
+     
+
+
+
 with asd as (
     select distinct a.*,replace(colname, '\n','') as N_col_name,parent_qvd, c.*,
     
