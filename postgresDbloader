@@ -51,44 +51,66 @@ class dbLoader():
 
             raise e
 
-    def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
+    def strip_spec_chars(self, string1 ):
+        for rep in  ['\\\"',',', ' ', ';']:
+             string1 = string1.replace(rep, "")        
+
+        return string1     
+
+    def load_qlik_apps(self, app_name, app_tab_sec_name, app_qvd_name, qvd_name, qvd_cols ):
         """
         qlik_app_qvd_flds
 
         :return:
         """
         ins_sql = """
-            insert into qlik_app_qvd_flds values(%s,%s,%s,%s)
+            insert into qlik_app_qvd_flds values(%s,%s,%s,%s,%s)
         """
+        
 
-        self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
+        self.db_connection.execute(ins_sql, (self.strip_spec_chars(app_name), self.strip_spec_chars(app_tab_sec_name), self.strip_spec_chars(app_qvd_name), self.strip_spec_chars(qvd_name), qvd_cols.strip() ))
 
-    def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
+    # def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
+    #     """
+    #     qlik_app_qvd_flds
+
+    #     :return:
+    #     """
+    #     ins_sql = """
+    #         insert into qlik_app_qvd_flds values(%s,%s,%s,%s)
+    #     """
+
+    #     self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
+
+
+    def del_qvd_tab_columns_by_app_name(self, qlik_app_name):
         """
         qlik_app_qvd_flds
+        :return:
+        """
+        del_sql = """
+            delete from  QVD_tab_columns where qlik_app_name = %s
+            
+        """
+        #logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
 
+        self.db_connection.execute(del_sql, (qlik_app_name))
+
+
+
+
+    def load_qvd_tab_columns(self, qlik_app_name, qlik_tab_name, qlik_conn_name,qlik_qvd_name, db_tab_name, db_col_name):
+        """
+        qlik_app_qvd_flds
         :return:
         """
         ins_sql = """
-            insert into qlik_app_qvd_flds values(%s,%s,%s,%s)
+            insert into QVD_tab_columns values(%s,%s,%s,%s,%s, %s)
+            
         """
+        #logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
 
-        self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
-
-
-
-
-    def load_qvd_tab_columns(self, qvd_name, db_tab_name, db_tab_col):
-        """
-        qlik_app_qvd_flds
-
-        :return:
-        """
-        ins_sql = """
-            insert into QVD_tab_columns values(%s,%s,%s)
-        """
-
-        self.db_connection.execute(ins_sql, (qvd_name, db_tab_name, db_tab_col ))
+        self.db_connection.execute(ins_sql, (qlik_app_name, qlik_tab_name, qlik_conn_name,qlik_qvd_name, db_tab_name, db_col_name ))
 
     def truc_qlik_apps_info(self ):
         """
@@ -111,7 +133,7 @@ class dbLoader():
         :return:
         """
         ins_sql = """
-            truncate table QVD_tab_columns
+            truncate table qvd_tab_columns
         """
 
         self.db_connection.execute(ins_sql)
