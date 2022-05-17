@@ -1,9 +1,10 @@
 import os
 import logging
-import sys 
+import sys
 import time
 from sqlalchemy import create_engine
 
+from datetime import datetime
 from postgresDbloader import dbLoader
 
 import propertyReader as pr
@@ -11,25 +12,9 @@ import propertyReader as pr
 
 
 
-def haslocalqlik_qvd_name(lines):
-    gotmatch= False
-    lineno = 0
-    for lineno, line in enumerate(lines.split('\r\n')):
-        
-#        logging.info(line)
-        if ':' in line:
-            
-            if line.strip()[-1] == ':':
-                logging.info(line)
-                gotmatch = True
-                if lines[lineno+1].split(' ')[0].lower() == 'load':
-                    gotmatch = True
-                    break
-    return gotmatch
-
-
 def write_2_qli_app_name_tab_qvd_name(str):
     pass
+
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
@@ -37,14 +22,15 @@ def print_hi(name):
 
     config = pr.getPropInstance('config/', 'NLP.properties')
     __prop_dict = dict(config.items('log'))
-    logFile= __prop_dict["logfilepath"] + sys.argv[0].split('\\')[-1]+ "_" +os.getlogin() + "_" + time.strftime('%Y%m%d%H%M%S') + '.log'
+    logFile = __prop_dict["logfilepath"] + sys.argv[0].split('\\')[-1] + "_" + os.getlogin() + "_" + time.strftime(
+        '%Y%m%d%H%M%S') + '.log'
 
     log_format = '%(asctime)s - [%(levelname)s] - [%(filename)s->%(funcName)s():%(lineno)d] - %(message)s'
     log_date_format = '[%m/%d/%Y %I:%M:%S %p]'
 
     logging.basicConfig(
         level=logging.INFO
-       # , filename = logFile
+        # , filename = logFile
         , format=log_format
         , datefmt=log_date_format
     )
@@ -53,21 +39,21 @@ def print_hi(name):
     # logging.getLogger().addHandler(ch)
 
     tabs = {}
-    qvd_dict= {}
+    qvd_dict = {}
     new_tabs = {}
 
-    path = "D:\\Users\\georgj3\\Documents\\MRO"
+    path = "C:\\Users\\tgaj2\\Downloads\\65"
 
-    sql = open("D:\\Users\\georgj3\\Documents\\sap.sql", "w",encoding="utf8")
+    sql = open("C:\\Users\\tgaj2\\Downloads\\sap.sql", "w", encoding="utf8")
 
-    qli_app_name_tab_qvd_name = open("D:\\Users\\georgj3\\Documents\\qli_app_name_tab_qvd_name11.sql", "w", encoding="utf8")
+    qli_app_name_tab_qvd_name = open("C:\\Users\\tgaj2\\Downloads\\qli_app_name_tab_qvd_name11.sql", "w",
+                                     encoding="utf8")
 
-    lists_path = "D:\\Users\\georgj3\\Documents\\mrotest.txt"
-
+    lists_path = "C:\\Users\\tgaj2\\Downloads\\mrotest.txt"
 
     """ creating db loader 
-    
-    
+
+
     """
     ldbLoader = dbLoader(__prop_dict)
     ldbLoader.init_db_conn()
@@ -76,173 +62,222 @@ def print_hi(name):
     ldbLoader.truc_qlik_apps_info()
     ldbLoader.truc_QVD_tab_columns()
 
-   
-
     with open(lists_path, "r", encoding="utf8")  as f:
         filenames = f.readlines()
 
-            
-    for filename in filenames:
-        
-        #delete already loaded stuff from 
-        #ldbLoader.del_qvd_tab_columns_by_app_name(filename.strip())
+    # for filename in filenames:
+    #
+    #     # delete already loaded stuff from
+    #     filename = filename.strip() + ".txt"
+    for filename in os.listdir(path):
+        logging.info("  {}  ".format(filename))
+        ldbLoader.del_qvd_tab_columns_by_app_name(filename.strip())
 
-        filename = filename.strip()+ ".txt"
-    # for filename in os.listdir(path):
+
+        # for filename in os.listdir(path):
         logging.info("  {}  ".format(filename))
         # exit()
         tabs = {}
         qvd_dict = {}
-        qvd_build_dict ={}
+        qvd_build_dict = {}
         new_tabs = {}
-        with open(os.path.join(path, filename), "r", encoding="utf8" )  as f:
+
+        with open(os.path.join(path, filename), "r", encoding="utf8")  as f:
             lines = f.readlines()
 
         logging.info("--GEO--C-- file name {}\n".format(filename))
         sql.write("--GEO--C-- file name {}\n".format(filename))
-        index = 0 
-        for  index, l  in enumerate(lines):
+        index = 0
+        for index, l in enumerate(lines):
 
-            logging.info(" lines {} {}".format(index, len(l)))    
+            logging.info("file:[{}]; line [{}]  length= {}".format(filename , index, len(l)))
             temp = l.split("///$tab")
             logging.info(" tabs count   {}".format(len(temp)))
             for ll in temp:
-                #print(ll)
-                tabs[ll.split("\\r\\n")[0]] = '\n'.join(ll.split("\\r\\n")[1:])
-                logging.info(" creating tabs dict tabs [{}]   {}".format(ll.split("\\r\\n")[0], len('\n'.join(ll.split("\\r\\n")[1:]))))
-                
+               # print(ll[0])
+                tab_list = [ 'Transform']
+                # if ll.split("\\r\\n")[0].strip() in tab_list:
+                tabs[ll.split("\\r\\n")[0]] = '\\n'.join(ll.split("\\r\\n")[1:])
+                logging.info(" creating tabs dict tabs [{}]   {}".format(ll.split("\\r\\n")[0],
+                                                                             len('\n'.join(ll.split("\\r\\n")[1:]))))
+
         """loop thru each tabs 
         """
-        new_qlik_tabs= {}
+        # new_qlik_tabs = {}
+        # for key, value in tabs.items():
+        #     tab_list = ['Load All Item Data']
+        #
+        #     if key.strip() in tab_list :
+        #     #if not value.lower() == "exit script;":
+        #         lines_in_tabs = value.split("\n")
+        #         new_lines_intab = []
+        #         for lintab in lines_in_tabs:
+        #             if not lintab.strip().startswith("//") and not lintab.strip() == "":
+        #                 new_lines_intab.append(lintab)
+        #         new_qlik_tabs[key] = '\r\n'.join([str(elem) for elem in new_lines_intab])
+        # tabs = new_qlik_tabs
+
         for key, value in tabs.items():
-            #tab_list = ['UnitBreakdown', 'Key_ItemS  haring']
-
-            #if key.strip() in tab_list :
-            if not value.lower() == "exit script;":
-                lines_in_tabs = value.split("\n")
-                new_lines_intab = []
-                for lintab in lines_in_tabs:
-                    if not lintab.strip().startswith("//") and not lintab.strip()=="":
-                        new_lines_intab.append(lintab)
-                new_qlik_tabs[key] = '\r\n'.join([str(elem) for elem in new_lines_intab])
-
-
-        for key, value in new_qlik_tabs.items():
-            qvd_name= key
+            qvd_name = key
             prev_qvd_name = key
             inc = 0
-            #if ("MDM" in key or "MDM" in value) and "(qvd)" in value:
+            # if ("MDM" in key or "MDM" in value) and "(qvd)" in value:
             cleaned_value = pr.cleanup_fld(value)
-            logging.info("Value after cleanup  {}".format(cleaned_value))
+            logging.info("Value after cleanup  {}".format(cleaned_value[:30]))
+            qvds =[]
+            if "(QVD)" in cleaned_value:
+                qvds = cleaned_value.split("(QVD)")  # Split by (qvd)
+            if "(qvd)" in cleaned_value:
+                qvds = cleaned_value.split("(qvd)")  # Split by (qvd)
 
-            qvds = cleaned_value.upper().split("(QVD)") # Split by (qvd)
             logging.info("key: {}  has  qvd   {}".format(key, len(qvds)))
+            if len(qvds) > 0:
+                for qvd in qvds:
+                    inc = inc + 1
+                    qvd_name = prev_qvd_name
+                    qvd_load = qvd
+                    # replace the 1st \r\r
 
-            for qvd in qvds:
-                inc=inc + 1
-                qvd_name = prev_qvd_name
-                qvd_load = qvd
-                # replace the 1st \r\r
+                    logging.info("\nStarting QVD [{}]/[{}]\n".format(inc, len(qvds) ))
 
-                logging.info("\nStarting QVD\n")
+                    qvd_script_lines = qvd.strip().split("\r\n")
+                    if len(qvd_script_lines) > 1:
+                        from_clauses = qvd_load.split("FROM")
+                        # if qvd_script_lines[0].strip() == ";":
+                        #     qvd_script_lines.pop(0)
+                        # if qvd_script_lines[0].strip().endswith(":"):
+                        #     qvd_name = qvd_script_lines[0].split(":")[0].replace("[", "").replace("]", "")
+                        #     prev_qvd_name = qvd_name
+                        #     inc = 0
+                        # else:
+                        #     if qvd_name == prev_qvd_name:
+                        #         qvd_name = "{}_{}".format(prev_qvd_name, inc)
 
-                qvd_script_lines = qvd.strip().split("\r\n")
-                if len(qvd_script_lines) > 1:
-                    if qvd_script_lines[0].strip() == ";":
-                        qvd_script_lines.pop(0)
-                    if qvd_script_lines[0].strip().endswith(":"):
-                        qvd_name = qvd_script_lines[0].split(":")[0].replace("[", "").replace("]", "")
-                        prev_qvd_name = qvd_name
-                        inc= 0
-                    else:
-                        if qvd_name== prev_qvd_name:
-                            qvd_name = "{}_{}".format(prev_qvd_name,inc)
+                        if pr.haslocalqlik_qvd_name(qvd_load.split("FROM")[0]):
+                            #removeing where carried from
+                            frm = from_clauses[0].split(";")[-1]
+                            if ':' in frm:
+                                qvd_name =frm.split(":")[0].replace("[", "").replace("]", "")
+                                prev_qvd_name = qvd_name
+                            else:
+                                qvd_name = "{}_{}".format(prev_qvd_name, inc)
 
-                    from_clause = qvd_load.split("FROM")
+                            inc = 0
+                        else:
+                            if qvd_name == prev_qvd_name:
+                                    qvd_name = "{}_{}".format(prev_qvd_name, inc)
 
-                    
-                    if len(from_clause) > 1:
-                        logging.info(" tab {} has from {}".format(key, from_clause[-1][:50] ))
-                        from_clause = qvd_load.split("FROM")[-1]# get the last part
-                        if from_clause.find(']') >0:
-                            from_clause = from_clause[: from_clause.find(']') ]
 
-                        from_clause.replace("lib:/", "").replace("[", "").replace("]","")
-                        
-                        for rep in  ['\\\"',',']:
-                            from_clause = from_clause.replace(rep,"")
+                        if len(from_clauses) > 1:
+                            #for loop the loop thru each from clause
+                            #for eachfrom in len(from_clauses)-1:
+                            for i in range(0, 1):
+                                eachfrom = from_clauses
+                                logging.info(" tab {} has from {}".format(key, eachfrom[-1][:50]))
+                                eachfrom = qvd_load.split("FROM")[-1]  # get the last part
+                                if eachfrom.find(']') > 0:
+                                    eachfrom = eachfrom[: eachfrom.find(']')]
 
-                        if ".qvd" in from_clause: # add an if beofre that into 
-                           
-                            qlik_qvd_name = qvd_load.split("FROM ")[-1].strip()
-                         
-                            qlik_qvd_cols = qvd_load.split("FROM ")[0].strip().split(':')[-1]
-                         
-                            qlik_tab_name ="--GEO--C-- qlik_tab_name: {}\n".format(key)
-                            
-                            logging.info(" App_name = {}; qlik_tab_name = {}; qlik_app_local_qvd_name = {}; qlik_qvd_name= {}; qlik_qvd_cols = {}".format(
+                                eachfrom.replace("lib:/", "").replace("[", "").replace("]", "")
+
+                                for rep in ['\\\"']:
+                                    eachfrom = eachfrom.replace(rep, "")
+
+                                if ".qvd" in eachfrom.lower() :  # add an if beofre that into
+                                    qlik_qvd_name = qvd_load.split("FROM ")[-1].strip()
+                                    """
+                                        localtab_name:  
+                                            Load *, fld fld ;
+                                            load *, fld, fld from [lib://];
+                                        1st split by from 
+                                        2nd split by :
+                                        3rd split by ;
+                                        
+                                    """
+                                    qlik_qvd_cols = qvd_load.split("FROM ")[0].strip().split(':')[-1].split(';')[-1]
+
+                                    qlik_tab_name = "--GEO--C-- qlik_tab_name: {}\n".format(key)
+
+                                    logging.info(
+                                        " App_name = {}; qlik_tab_name = {}; qlik_app_local_qvd_name = {}; qlik_qvd_name= {}; qlik_qvd_cols = {}".format(
+                                            filename.replace(".txt", "")
+                                            , key
+                                            , qvd_name
+                                            , qlik_qvd_name
+                                            , qlik_qvd_cols[:20]
+                                        )
+                                    )
+
+                                    sql.write(qvd_name)
+                                    sql.write(qlik_tab_name)
+                                    ldbLoader.load_qlik_apps(
                                         filename.replace(".txt", "")
-                                        , key 
+                                        , key
                                         , qvd_name
                                         , qlik_qvd_name
-                                        , qlik_qvd_cols[:20]
-                                        )
-                                        )
+                                        , qlik_qvd_cols
+                                    )
 
-                            sql.write(qvd_name)
-                            sql.write(qlik_tab_name)
-                            ldbLoader.load_qlik_apps(
-                                                filename.replace(".txt", "")
-                                                , key 
-                                                , qvd_name
-                                                , qlik_qvd_name
-                                                , qlik_qvd_cols
-                            )
+                                elif  ".xls" in eachfrom.lower():
+                                    semicolondelimetedline = qvd_load.split(";")
+                                    if len(eachfrom.strip().split("/")) > 0:
+                                        db_tab_name = eachfrom.strip().split("/")[-1]
+                                    else:
+                                        db_tab_name = qvd_name
+                                    # if qvdlocalname: load ..... from qvdname.qvdloggin
+                                    # logging.info("qvd_load = {}".format(qvd_load.split("FROM")))
 
-                        else:
-                            if len(from_clause.strip().split("/")) > 0:
-                                db_tab_name =  from_clause.strip().split("/")[-1]
-                            else:
-                                db_tab_name = qvd_name
-                            # if qvdlocalname: load ..... from qvdname.qvdloggin
-                            #logging.info("qvd_load = {}".format(qvd_load.split("FROM")))
+                                    if pr.haslocalqlik_qvd_name(qvd_load.split("FROM")[0]):
+                                        logging.info(
+                                            "qvd_load_from[0]_: = {}".format(qvd_load.split("FROM")[0].strip().split(':')[-1]))
 
-                            if haslocalqlik_qvd_name (qvd_load.split("FROM")[0]):
-                                logging.info("qvd_load_from[0]_: = {}".format(qvd_load.split("FROM")[0].strip().split(':')[-1] ))
+                                        qlik_qvd_cols = qvd_load.split("FROM")[0].strip().split(':')[-1]
+                                        qlik_qvd_name = qvd_load.split("FROM")[0].strip().split(':')[0].split(';')[
+                                            -1]  # to handel nWHERE LEFT(APPID,7)<>\'SESSION\'\r\nAND SUBSTRINGCOUNT(\\"USERID\\",\'SVC_QLIKPROD\') = 0\r\n;\r\n[SESSION USER INFO]:\r\nIF(ISNULL(FACILITY)
+                                    else:
+                                        qlik_qvd_cols = qvd_load.split("FROM")[0].strip().split(':')[-1]
+                                        qlik_qvd_name = key.strip()
+                                    if not "," in eachfrom:
+                                        logging.info(eachfrom)
+                                        selectcolumns = pr.load_qvd_build_info(qlik_qvd_cols.replace("\\t", "\t"))
+                                        # for loop to fire insert
+                                        # create table qvd_tab_columns(qlik_app_name varchar(100), qlik_tab_name varchar(200), qlik_conn_name varchar(200), db_tab_name varchar(200), db_col_name varchar(200))
 
-                                qlik_qvd_cols = qvd_load.split("FROM")[0].strip().split(':')[-1] 
-                                qlik_qvd_name =  qvd_load.split("FROM")[0].strip().split(':')[0].split(';')[-1] # to handel nWHERE LEFT(APPID,7)<>\'SESSION\'\r\nAND SUBSTRINGCOUNT(\\"USERID\\",\'SVC_QLIKPROD\') = 0\r\n;\r\n[SESSION USER INFO]:\r\nIF(ISNULL(FACILITY)
-                            else:
-                                qlik_qvd_cols = qvd_load.split("FROM")[0].strip().split(':')[-1] 
-                                qlik_qvd_name =  key.strip()
-                            
-                             
-                            selectcolumns = pr.load_qvd_build_info(qlik_qvd_cols.replace("\\t", "\t"))
-                            # for loop to fire insert 
-                            # create table qvd_tab_columns(qlik_app_name varchar(100), qlik_tab_name varchar(200), qlik_conn_name varchar(200), db_tab_name varchar(200), db_col_name varchar(200))
-                            logging.info("qlik_conn_name= {}; qlik_qvd_name = {}; db_tab_name = {}; column count = [{}]".format(from_clause,  qlik_qvd_name, db_tab_name, len(selectcolumns)))
-                            for column in selectcolumns:
-                                column_cleaned = column
-                                for rep in  ['\\\"',',']:
-                                    column_cleaned = column_cleaned.replace(rep, "")
-                                logging.info("qlik_app_name= {}; qlik_tab_name = {}; qlik_conn_name= {}; qlik_qvd_name = {}; db_tab_name = {}; db_col_name= {} ".format(
-                                         filename.replace(".txt", "")
-                                         , key, from_clause, qlik_qvd_name, db_tab_name, column_cleaned )
-                                        )    
-                            #qvd_build_dict["{}.{}".format(qvd_name,db_tab_name)] = {'db_tab_name' : db_tab_name, 'cols': pr.load_qvd_build_info(qvd_load.replace("\\t", "\t"))}
-                                ldbLoader.load_qvd_tab_columns(filename.replace(".txt", ""), key.strip(), from_clause.strip(), qlik_qvd_name.strip(),db_tab_name.strip(), column_cleaned)
+                                        for column in selectcolumns:
+                                            column_cleaned = column
+                                            for rep in ['\\\"', ',']:
+                                                column_cleaned = column_cleaned.replace(rep, "")
+                                            logging.info(
+                                                "qlik_app_name= {}; qlik_tab_name = {}; qlik_conn_name= {}; qlik_qvd_name = {}; db_tab_name = {}; db_col_name= {} ".format(
+                                                    filename.replace(".txt", "")
+                                                    , key, eachfrom, qlik_qvd_name, db_tab_name, column_cleaned)
+                                            )
+                                            # qvd_build_dict["{}.{}".format(qvd_name,db_tab_name)] = {'db_tab_name' : db_tab_name, 'cols': pr.load_qvd_build_info(qvd_load.replace("\\t", "\t"))}
+                                            ldbLoader.load_qvd_tab_columns(filename.replace(".txt", ""), key.strip(),
+                                                                           eachfrom.strip(), qlik_qvd_name.strip(),
+                                                                           db_tab_name.strip(), column_cleaned)
+                                else:
+                                    libs = qvd.split("LIB ")  # Split by LIB
+                                    logging.info("key: {}  has 4 LIB connect {}".format(key, len(libs)))
+                                    pr.load_rogue_qvdbuilder_inapp(libs, filename, key, ldbLoader)
 
-            #else:
-            #    new_tabs[key] = value
+            else: # with a qvd there could a rogue qvd builder capturing that
+                libs = cleaned_value.split("LIB ")  # Split by LIB
+                logging.info("filename = {}key: {}  has 4 LIB connect {}".format(filename, key, len(libs)))
+                pr.load_rogue_qvdbuilder_inapp(libs, filename, key, ldbLoader)
 
-      
+
+
     sql.close()
     qli_app_name_tab_qvd_name.close()
 
 
-
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    start = datetime.now()
+    print("started at {}: ended at {}", start)
     print_hi('PyCharm')
+    end = datetime.now()
+    print("started at {}: ended at {}".format( start, end ))
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
