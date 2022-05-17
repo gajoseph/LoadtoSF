@@ -12,7 +12,6 @@ class dbLoader():
     db_connection = None
     insert_sql = ""
 
-
     def __del__(self):
         logging.info('Destructor called, for object :{}'.format(self.__class__.__name__))
         if self.db_connection is not None:
@@ -27,16 +26,17 @@ class dbLoader():
         self.init_db_conn()
 
     def __buildDbstring__(self):
-         return "postgresql://{}:{}@{}:{}/{}".format(self.__prop_dict['pg.user']
-                                                   , self.__prop_dict['pg.password']
-                                                   , self.__prop_dict['pg.server']
-                                                   , self.__prop_dict['pg.port']
-                                                   , self.__prop_dict['pg.database'])
+        return "postgresql://{}:{}@{}:{}/{}".format(self.__prop_dict['pg.user']
+                                                    , self.__prop_dict['pg.password']
+                                                    , self.__prop_dict['pg.server']
+                                                    , self.__prop_dict['pg.port']
+                                                    , self.__prop_dict['pg.database'])
 
     def init_db_conn(self):
         try:
             self.db_connection = create_engine(self.__buildDbstring__()
-                                               , connect_args={'options': '-csearch_path={}'.format(self.__prop_dict['pg.schema'])}
+                                               , connect_args={
+                    'options': '-csearch_path={}'.format(self.__prop_dict['pg.schema'])}
 
                                                )
             result_set = self.db_connection.execute(
@@ -51,13 +51,13 @@ class dbLoader():
 
             raise e
 
-    def strip_spec_chars(self, string1 ):
-        for rep in  ['\\\"',',', ' ', ';']:
-             string1 = string1.replace(rep, "")        
+    def strip_spec_chars(self, string1):
+        for rep in ['\\\"', ',', '\r', ';', '\\t', '\n']:
+            string1 = string1.replace(rep, "")
 
-        return string1     
+        return string1
 
-    def load_qlik_apps(self, app_name, app_tab_sec_name, app_qvd_name, qvd_name, qvd_cols ):
+    def load_qlik_apps(self, app_name, app_tab_sec_name, app_qvd_name, qvd_name, qvd_cols):
         """
         qlik_app_qvd_flds
 
@@ -66,9 +66,10 @@ class dbLoader():
         ins_sql = """
             insert into qlik_app_qvd_flds values(%s,%s,%s,%s,%s)
         """
-        
 
-        self.db_connection.execute(ins_sql, (self.strip_spec_chars(app_name), self.strip_spec_chars(app_tab_sec_name), self.strip_spec_chars(app_qvd_name), self.strip_spec_chars(qvd_name), qvd_cols.strip() ))
+        self.db_connection.execute(ins_sql, (
+        self.strip_spec_chars(app_name), self.strip_spec_chars(app_tab_sec_name), self.strip_spec_chars(app_qvd_name),
+        self.strip_spec_chars(qvd_name), qvd_cols.strip()))
 
     # def load_qlik_apps(self, app_name, app_qvd_name, qvd_name, qvd_cols ):
     #     """
@@ -82,7 +83,6 @@ class dbLoader():
 
     #     self.db_connection.execute(ins_sql, (app_name, app_qvd_name, qvd_name, qvd_cols ))
 
-
     def del_qvd_tab_columns_by_app_name(self, qlik_app_name):
         """
         qlik_app_qvd_flds
@@ -90,29 +90,28 @@ class dbLoader():
         """
         del_sql = """
             delete from  QVD_tab_columns where qlik_app_name = %s
-            
+
         """
-        #logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
+        # logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
 
         self.db_connection.execute(del_sql, (qlik_app_name))
 
-
-
-
-    def load_qvd_tab_columns(self, qlik_app_name, qlik_tab_name, qlik_conn_name,qlik_qvd_name, db_tab_name, db_col_name):
+    def load_qvd_tab_columns(self, qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name, db_tab_name,
+                             db_col_name):
         """
         qlik_app_qvd_flds
         :return:
         """
         ins_sql = """
             insert into QVD_tab_columns values(%s,%s,%s,%s,%s, %s)
-            
+
         """
-        #logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
+        # logging.info(" insert into QVD_tab_columns \n values ({},{},{},{}, {}, {})".format(qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name,db_tab_name, db_col_name ))
 
-        self.db_connection.execute(ins_sql, (qlik_app_name, qlik_tab_name, qlik_conn_name,qlik_qvd_name, db_tab_name, db_col_name ))
+        self.db_connection.execute(ins_sql, (
+        qlik_app_name, qlik_tab_name, qlik_conn_name, qlik_qvd_name, db_tab_name, db_col_name))
 
-    def truc_qlik_apps_info(self ):
+    def truc_qlik_apps_info(self):
         """
         qlik_app_qvd_flds
 
@@ -124,9 +123,7 @@ class dbLoader():
 
         self.db_connection.execute(ins_sql)
 
-
-
-    def truc_QVD_tab_columns(self ):
+    def truc_QVD_tab_columns(self):
         """
         qlik_app_qvd_flds
 
