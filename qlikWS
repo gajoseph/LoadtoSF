@@ -1,0 +1,300 @@
+import ssl
+import json
+
+import websocket
+from websocket import create_connection
+import logging
+import inspect
+import os
+import sys
+import time
+import venv.propertyReader as pr
+import threading
+
+class qlikeWS:
+    __steve= "Empty"
+    sWsUrl = ""
+    sWsPrivKeyPath = ""
+    certs = ({"ca_certs": sWsPrivKeyPath + "root.pem",
+              "certfile": sWsPrivKeyPath + "client.pem",
+              "keyfile": sWsPrivKeyPath + "client_key.pem",
+              "cert_reqs": ssl.CERT_REQUIRED,
+              "server_side": False
+              })
+    sUserDirectory = ""
+    sUserId = ""
+    __prop_dict= ""
+    __objWsS_Conn  =""
+    __objLogger = ""
+    handle= -1
+    qSessionAppId= ""
+    sappName = ""
+
+    def setProps(self):
+        self.sWsUrl= self.__prop_dict['qlik.sense.web.socket.url']
+        self.sWsPrivKeyPath= self.__prop_dict['qlik.sense.web.socket.priv.key.path']
+        self.certs = ({"ca_certs": self.sWsPrivKeyPath + "root.pem",
+              "certfile": self.sWsPrivKeyPath + "client.pem",
+              "keyfile": self.sWsPrivKeyPath + "client_key.pem",
+              "cert_reqs": ssl.CERT_REQUIRED,
+              "server_side": False
+              })
+        self.sUserDirectory = self.__prop_dict['qlik.sense.web.api.user.directory']
+        self.sUserId = self.__prop_dict['qlik.sense.web.api.user.id']
+
+        #ws = create_connection(sWsUrl, sslopt=certs,header={'X-Qlik-User: UserDirectory=%s; UserId=%s' % (sUserDirectory, sUserId)})
+
+    def setLogging(self):
+        print (sys.argv[0].split("/")[-1][0:-3])
+        scriptName = inspect.stack()[1][1].split("/")[-1][0:-3]
+        print(" Starting : log file is {}".format(scriptName))
+        dateTimeStamp = time.strftime('%Y%m%d%H%M%S')  # in the format YYYYMMDDHHMMSS
+        userName = os.getlogin()
+        logFile = self.__prop_dict["logfilepath"] + scriptName + "_" + userName + "_" + dateTimeStamp + ".log"
+
+        logging.basicConfig(filename=logFile, level=logging.DEBUG, format=self.__prop_dict["log.format"],
+                            datefmt=self.__prop_dict["log.date.format"])
+
+        self.__objLogger = logging.getLogger()
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(self.__prop_dict["log.format"], datefmt=self.__prop_dict["log.date.format"])
+        ch.setFormatter(formatter)
+        self.__objLogger.addHandler(ch)
+        self.__objLogger.info("GEORGR ")
+
+    def __init__(self, pobjLogger=None,pprop_dict=None):
+        #config = pr.getPropInstance(  os.path.dirname(__file__) , 'NLP.properties')
+        #self.__prop_dict = dict(config.items('QVS_SETUP'))
+        if (pobjLogger is None):
+            self.setLogging()
+        else:
+            self.__objLogger = pobjLogger
+
+        self.__objLogger.info("Starting a new instance of {}".format(type(self).__name__) )
+        self.__prop_dict = pprop_dict
+        self.setProps()
+
+
+
+
+    def connect1(self,stabName):
+        frame = inspect.stack()[1]
+#        module = inspect.getmodule(frame[0])
+        websocket.WebSocketApp
+
+        try:
+            self.__objWsS_Conn = create_connection(self.sWsUrl+"/app/f7ed11bd-67cf-469f-a757-431b83702ad2" , sslopt=self.certs,
+                                                              header={'X-Qlik-User: UserDirectory=%s; UserId=%s' % (self.sUserDirectory, self.sUserId)})
+        except Exception as e :
+            logging.error("GEORGE " + e.__str__())
+            # self.__objLogger.critical("Error when connecting " + self.sWsUrl + sys.exc_info()[0])
+
+
+    def GetActiveDoc(self):
+        getActiveDoc = {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "GetActiveDoc",
+              "handle": -1,
+              "params": []
+                }
+
+        ret = self.__callqlikjsonrpc(getActiveDoc, 1)
+        return ret
+
+    def createSessApp(self,sappName):
+        createAppJson = {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "CreateSessionApp",
+            "handle": -1,
+            "params": []
+        }
+        #"Sales1stQuater.qvf"
+        ret=  self.__callqlikjsonrpc(createAppJson, 1)
+        self.sappName = sappName
+        self.qSessionAppId = ret["result"]["qSessionAppId"]
+        self.handle = ret["result"]["qReturn"]["qHandle"]
+        return ret
+
+
+
+
+    def getQlikAppList(self):
+        GetDocList = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "GetDocList",
+            "handle": -1,
+            "params": [],
+        }
+        #asyncio.get_event_loop().run_until_complete(self.__callqlikjsonrpc(GetDocList))
+        return self.__callqlikjsonrpc(GetDocList,2)
+
+    def __callqlikjsonrpc(self, jsonQlikReq, i):
+        jreq = json.dumps(jsonQlikReq)
+        print(jreq)
+        self.__objWsS_Conn.send(jreq)
+
+        #while True:
+        x=1
+        time.sleep(1)
+        for x in range(i):
+            msg =  self.__objWsS_Conn.recv()
+           # print("GEORGE raw json "  + msg)
+            #if not msg: break
+            msgJson = json.loads(msg)
+            print(json.dumps(msgJson, indent=4, sort_keys=True))
+
+        return msgJson
+
+
+
+    def OpenQlikApp(self,id, id1):
+        OpenQDoc = {
+            "method": "OpenDoc",
+            "handle": -1,
+            "params": [
+                id
+            ],
+            "jsonrpc": "2.0",
+            "id": id1
+        }
+        return self.__callqlikjsonrpc(OpenQDoc,1)
+
+    def setQscript(self, handle, script ):
+        setscript = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "SetScript",
+            "handle": self.handle,
+            "params": [
+                script
+            ]
+        }
+        setscriptJsonreturn  = self.__callqlikjsonrpc(setscript, 1)
+        print("ZZZZZ Calling releadod" )
+
+        return  self.reloadQApp(handle)
+
+    def GetScriptEx(self, id):
+        print(self.handle)
+        OpenQDoc = {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "handle": 5,
+            "method": "GetScriptEx",
+            "params": {}
+
+        }
+        return self.__callqlikjsonrpc(OpenQDoc, 2)
+
+    def reloadQApp(self, handle ):
+        ReloadJsonQ= {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "DoReloadEx",
+            "handle": handle,
+            "params": []
+        }
+        print ("XXXX Done Reload")
+
+        return self.__callqlikjsonrpc(ReloadJsonQ, 1)
+
+    def reloadQAppStatus(self, handle ):
+        ReloadStatusJsonQ= {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "GetProgress",
+            "handle": -1,
+            "params": [4]
+        }
+        print("XXXX Reload Status ::")
+        return self.__callqlikjsonrpc(ReloadStatusJsonQ, 1)
+
+    def __del__(self):
+        self.__objLogger.info('Destructor called, for ws url :{}'.format(self.sWsUrl))
+        if not self.__objWsS_Conn and not self.__objWsS_Conn=="":
+            self.__objWsS_Conn.close()
+            del self.__objWsS_Conn
+        del self.__prop_dict
+
+    def get_activedoc(self, id ):
+        request = {
+            'method': 'GetActiveDoc',
+            'params': [],
+            'handle': -1,
+            'id': id,
+            'jsonrpc': '2.0'
+        }
+        return self.__callqlikjsonrpc(request, 1)
+
+    def ws_run(self):
+        global ws
+        ws = websocket.WebSocketApp(self.sWsUrl,
+
+                                    header={'X-Qlik-User: UserDirectory=QLIKLOCAL; UserId=administrator'})
+        ws =  self.__objWsS_Conn
+        ws.on_open = self.on_open
+
+        ws.run_forever(sslopt=self.certs)
+        self.__objWsS_Conn = ws
+
+    def next_id(self):
+        """
+        Incrementing ID for Json requests
+        :return: The current ID
+        """
+        with threading.Lock():
+            result = self.cur_id
+            self.cur_id += 1
+        return result
+
+    def on_open(self, ws):
+        self.next_id()
+def main():
+    config = pr.getPropInstance('config/', 'NLP.properties')
+    __prop_dict = dict(config.items('QVS_SETUP'))
+    logFile = __prop_dict["logfilepath"] + sys.argv[0].split("/")[-1][0:-3] + "_" + os.getlogin() + "_" + time.strftime('%Y%m%d%H%M%S')   + ".log"
+    # --GEO--C-- LOGGING SETTINGS
+    logging.basicConfig(
+                        filename=logFile
+                        , level=logging.DEBUG
+                        , format=__prop_dict["log.format"]
+                        , datefmt=__prop_dict["log.date.format"]
+                        )
+
+    root = logging.getLogger()
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(__prop_dict["log.format"], datefmt=__prop_dict["log.date.format"])
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+    logging.info("Starting SSS")
+
+
+    tqlikeWS = qlikeWS(logging.getLogger(),__prop_dict)
+    tqlikeWS.connect1()
+
+    print(tqlikeWS.__class__)
+    a = tqlikeWS.OpenQlikApp('f7ed11bd-67cf-469f-sc-xxxx','f7ed11bd-67cf-469f-sc-xxxx' )
+    print("GGG\n" + str(a))
+    a = tqlikeWS.GetScriptEx('f7ed11bd-67cf-469f-sc-xxxx')
+
+    print(a, "GetScriptEx")
+    # a = tqlikeWS.getQlikAppList()
+    # print(a, "getQlikAppList")
+    # a= tqlikeWS.GetActiveDoc()
+    # print(a, "GetActiveDoc")
+    # a = tqlikeWS.reloadQApp(1);
+    # print (a)
+    # a = tqlikeWS.reloadQAppStatus(1)
+    # print(a)
+    #
+    del tqlikeWS
+
+if __name__ == "__main__":
+    main()
+#
+# 10K -- april 28th 7% for 12 month/ 365 = 3 days. may 1st 9.6%---> oct31st  8%
