@@ -1,0 +1,175 @@
+import os
+import logging
+import time
+import sys
+
+from postgresDbloader import dbLoader
+
+import propertyReader as pr
+
+
+def write_2_qli_app_name_tab_qvd_name(str):
+    pass
+
+
+def print_hi(name):
+    # Use a breakpoint in the code line below to debug your script.
+    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+
+    config = pr.getPropInstance('config/', 'NLP.properties')
+    __prop_dict = dict(config.items('log'))
+    logFile = __prop_dict["logfilepath"] + sys.argv[0].split('\\')[-1] + "_" + os.getlogin() + "_" + time.strftime(
+        '%Y%m%d%H%M%S') + '.log'
+
+    log_format = '%(asctime)s - [%(levelname)s] - [%(filename)s->%(funcName)s():%(lineno)d] - %(message)s'
+    log_date_format = '[%m/%d/%Y %I:%M:%S %p]'
+
+    logging.basicConfig(
+        level=logging.INFO
+        # , filename = logFile
+        , format=log_format
+        , datefmt=log_date_format
+    )
+
+    ch = logging.StreamHandler(sys.stdout)
+    logging.getLogger().addHandler(ch)
+
+    tabs = {}
+    qvd_dict = {}
+    new_tabs = {}
+
+    path = "D:\\Users\\georgj3\\Documents\\MRO_QVD"
+
+    sql = open("D:\\Users\\georgj3\\Documents\\sap.sql", "w", encoding="utf8")
+
+    qli_app_name_tab_qvd_name = open("D:\\Users\\georgj3\\Documents\\qli_app_name_tab_qvd_name11.sql", "w",
+                                     encoding="utf8")
+
+    lists_path = "D:\\Users\\georgj3\\Documents\\mro_qvdtest.txt"
+
+    """ creating db loader 
+
+
+    """
+    ldbLoader = dbLoader(__prop_dict)
+    ldbLoader.init_db_conn()
+
+    """ truncate table """
+    # ldbLoader.truc_qlik_apps_info()
+    # ldbLoader.truc_QVD_tab_columns()
+
+    with open(lists_path, "r", encoding="utf8")  as f:
+        filenames = f.readlines()
+    for filename in filenames:
+        filename = filename.strip() + ".txt"
+        # for filename in os.listdir(path):
+        # logging.info("  {}  ".format(filename))
+        tabs = {}
+
+        with open(os.path.join(path, filename), "r", encoding="utf8")  as f:
+            lines = f.readlines()
+
+        logging.info("--GEO--C-- file name {}\n".format(filename))
+        sql.write("--GEO--C-- file name {}\n".format(filename))
+        for l in lines:
+
+            # print(0, l.split("///$tab"))
+            temp = l.split("///$tab")
+            for ll in temp:
+                # print(ll)
+                tabs[ll.split("\\r\\n")[0]] = '\n'.join(ll.split("\\r\\n")[1:])
+        """loop thru each tabs 
+        """
+        tmpe_tab = {}
+
+        """
+        limit to only one TAB
+        """
+        new_qlik_tabs = {}
+        for key, value in tabs.items():
+            # print("KEY = " + key  + " " )
+            # tab_list = ['TIDPOLIN ALL REVISIONS', "TID WOOOS"]
+
+            # if key.strip() in tab_list :
+
+            lines_in_tabs = value.split("\n")
+
+            new_lines_intab = []
+            for lintab in lines_in_tabs:
+                if not lintab.strip().startswith("//") and not lintab.strip() == "":
+                    new_lines_intab.append(lintab)
+            new_qlik_tabs[key.strip()] = '\r\n'.join([str(elem) for elem in new_lines_intab])
+
+        for key, value in new_qlik_tabs.items():
+
+            inc = 0
+            # if ("MDM" in key or "MDM" in value) and "(qvd)" in value:
+            # logging.info("Valeue before cleanup  {}".format(value[:30]))
+            cleaned_value = pr.cleanup_fld(value)
+            logging.info("Value after cleanup  {}".format(cleaned_value[:20]))
+
+            qvds = cleaned_value.split("LIB ")  # Split by LIB
+            logging.info("key: {}  has 4 Select FROM clauses   {}".format(key, len(qvds)))
+
+            for qvd in qvds:  ## loop thru each LIB
+                inc = inc + 1
+
+                qvd_load = qvd
+                # replace the 1st \r\r
+
+                qvd_script_lines = qvd.strip().split("\r\n")
+                if len(qvd_script_lines) > 1:
+
+                    """
+                    Our pattenr will be LIB CONNECT connectionname; 
+                    qvdtablename:
+                    Load 
+
+                    Select .....
+                    from 
+                    """
+                    semicolondelimetedline = qvd_load.split(";")
+                    for line in semicolondelimetedline:
+                        # get QVD NAME
+                        if "vQVDTableFileName" in line:
+                            qlik_qvd_name = line.split(' vQVDTableFileName ')[-1].replace('=', '').strip().replace("'",
+                                                                                                                   '')
+                            logging.info("qvd_name = {}".format(qlik_qvd_name))
+                        # check for connect first and get connection name
+                        if "CONNECT" in line.strip():
+                            connection_name = line.strip().split(' ')[-1].strip().replace("'", '')
+                            logging.info("Conectionname = {}".format(connection_name))
+                        elif "SELECT " in line.upper().strip():  # split by from
+
+                            from_stat = line.upper().split('FROM ')
+                            # if "WHERE" in from_stat[1].upper():
+                            db_tab_name = from_stat[1].upper().split('WHERE')[0].replace('\\\"', "").strip()
+
+                            logging.info("Select  = {}\n  from tab = {} ".format(from_stat[0][:30], db_tab_name))
+                            asd = 100
+
+                            selectcolumns = pr.load_qvd_build_info(from_stat[0].replace("\\t", "\t"))
+                            # for loop to fire insert
+                            # create table qvd_tab_columns(qlik_app_name varchar(100), qlik_tab_name varchar(200), qlik_conn_name varchar(200), db_tab_name varchar(200), db_col_name varchar(200))
+                            logging.info(
+                                "qlik_conn_name= {}; qlik_qvd_name = {}; db_tab_name = {}; column count = [{}] {}".format(
+                                    connection_name, qlik_qvd_name, db_tab_name, len(selectcolumns), key))
+                            for column in selectcolumns:
+                                column_cleaned = column
+                                for rep in ['\\\"', ',']:
+                                    column_cleaned = column_cleaned.replace(rep, "")
+                                logging.info(
+                                    "qlik_app_name= {}; qlik_tab_name = {} qlik_conn_name= {}; qlik_qvd_name = {}; db_tab_name = {}; db_col_name= {} ".format(
+                                        filename.replace(".txt", "")
+                                        , key, connection_name, qlik_qvd_name, db_tab_name, column_cleaned[:20])
+                                )
+                                ldbLoader.load_qvd_tab_columns(filename.replace(".txt", ""), key, connection_name,
+                                                               qlik_qvd_name, db_tab_name, column_cleaned)
+
+    sql.close()
+    qli_app_name_tab_qvd_name.close()
+
+
+# Press the green button in the gutter to run the script.
+if __name__ == '__main__':
+    print_hi('PyCharm')
