@@ -1,0 +1,26 @@
+
+Create Or Replace File Format FORMAT_DB2_LINUX_GZIP
+  type = 'CSV'
+  COMPRESSION=gzip
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  DATE_FORMAT = 'YYYYMMDD'
+  TIMESTAMP_FORMAT = 'YYYY-MM-DD-HH24.MI.SS.FF'
+  TIME_FORMAT = 'HH24.MI.SS'
+  ENCODING = 'iso-8859-1'
+  TRIM_SPACE=true;
+
+Create Or Replace File Format FORMAT_DB2_LINUX
+  type = 'CSV'
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  DATE_FORMAT = 'YYYYMMDD'
+  TIMESTAMP_FORMAT = 'YYYY-MM-DD-HH24.MI.SS.FF'
+  TIME_FORMAT = 'HH24.MI.SS'
+  ENCODING = 'iso-8859-1'
+  TRIM_SPACE=true;
+
+Create Or Replace File Format format_postgres_linux
+  type = 'CSV'
+  field_delimiter = '|'
+  skip_header = 1  
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"' 
+  TRIM_SPACE=true;
