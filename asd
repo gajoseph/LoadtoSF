@@ -138,6 +138,29 @@ Grant Usage On All schemas in Database Identifier($V_ENV_DB) To Role Identifier(
 Grant All   On All schemas in Database Identifier($V_ENV_DB) To Role Identifier($V_ENV_DB_ADMIN_ROLE);
 
 
+
+
+
+
+-- READ WRITE -- 
+-- set existing objects grants (In case schema was previously created)
+Grant Select, Insert, Update, Delete, Truncate, References 
+                 On All Tables       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Select     On All Views        In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Read       On All Stages       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On All Stages       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On All File Formats In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On All Functions    In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On All Sequences    In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+-- set Future objects grants
+Grant Select, Insert, Update, Delete, Truncate, References 
+                 On Future Tables       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Select     On Future Views        In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Read       On Future Stages       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On Future Stages       In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On Future File Formats In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On Future Functions    In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE);
+Grant Usage      On Future Sequences    In Schema Identifier($V_SCHEMA_NAME) To Role Identifier($V_ENV_DB_SCHEMA_RW_ROLE); 
 -----------------------------------------------------------
 -- PUBLIC Schema 
 -----------------------------------------------------------
