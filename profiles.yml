@@ -1,0 +1,26 @@
+.profile_defaults: &defaults
+  type: snowflake
+  account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+  user: "{{ env_var('SNOWFLAKE_USER') }}"
+  password:  "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+  schema: "test_{{ env_var('CI_COMMIT_SHORT_SHA') }}"
+  threads: 4
+  client_session_keep_alive: False
+  config:
+    send_anonymous_usage_stats: False
+
+local:
+  target: test
+  outputs:
+    test:
+      <<: *defaults
+      role: "{{ env_var('TESTING_ROLE') }}"
+      database: "{{ env_var('TESTING_DATABASE') }}"
+      warehouse: "{{ env_var('TESTING_WAREHOUSE') }}"
+    prod:
+      <<: *defaults
+      role: "{{ env_var('PRODUCTION_ROLE') }}"
+      database: "{{ env_var('PRODUCTION_DATABASE') }}"
+      warehouse: "{{ env_var('PRODUCTION_WAREHOUSE') }}"
+      schema: analytics
+      
