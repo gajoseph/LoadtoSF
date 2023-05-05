@@ -1,0 +1,124 @@
+
+variables:
+  GIT_STRATEGY: clone
+
+stages:
+  - install packages
+  - test sources
+  - build branch
+  - test branch
+  - build production
+  - test production
+  - full refresh
+
+package setup:
+  stage: install packages
+  tags:
+    - dbt-runner
+  only:
+    - merge_requests
+    - master
+  artifacts:
+    paths:
+      - dbt_modules/
+  script:
+    - dbt clean --profiles-dir ./profiles
+    - dbt deps --profiles-dir ./profiles
+
+
+rabbitMQ Events:  &source_test
+  stage: test sources
+  tags:
+    - dbt-runner
+  only:
+    - master
+  except:
+    variables:
+      - $RUN_FULL_REFRESH
+  variables:
+    SOURCE_NAME: rabbitmq_events
+  script:
+    - dbt test --profiles-dir ./profiles --models source:$SOURCE_NAME
+
+build branch:
+  stage: build branch
+  tags:
+    - dbt-runner
+  only:
+    - merge_requests
+  environment:
+    name: $CI_COMMIT_SHORT_SHA
+  script:
+    - dbt run --profiles-dir ./profiles --target test --full-refresh
+
+test branch:
+  stage: test branch
+  tags:
+    - dbt-runner
+  only:
+    - merge_requests
+  script:
+    - dbt test --profiles-dir ./profiles --target test
+  environment:
+    name: $CI_COMMIT_SHORT_SHA
+
+build new production:
+  stage: build production
+  tags:
+    - dbt-runner
+  only:
+    - master
+  except:
+    refs:
+      - schedules
+    variables:
+      - $RUN_FULL_REFRESH
+  script:
+    - dbt run --profiles-dir ./profiles --target prod --full-refresh
+  environment:
+    name: $CI_COMMIT_SHORT_SHA
+
+build scheduled production:
+  stage: build production
+  tags:
+    - dbt-runner
+  only:
+    refs:
+      - schedules
+  except:
+    variables:
+      - $RUN_FULL_REFRESH
+  script:
+    - dbt run --profiles-dir ./profiles --target prod
+  ## Added the full-refresh tag to the scheduled run.  This needs to be removed when we determine how to handle the dead uuids incrementally
+  ## Could potentially be removed after all migrations are completed if this doesn't continue to be a problem.
+  environment:
+    name: $CI_COMMIT_SHORT_SHA
+
+test production:
+  stage: test production
+  tags:
+    - dbt-runner
+  only:
+    - master
+  except:
+    variables:
+      - $RUN_FULL_REFRESH
+  script:
+    - dbt test --profiles-dir ./profiles --target prod
+  environment:
+    name: $CI_COMMIT_SHORT_SHA
+
+
+
+## runs full refresh manually when using the RUN_FULL_REFRESH variable 
+## This will only be used when someone needs to do a full refresh manually, and will only be run with manual pipeline runs.
+full refresh:
+  stage: full refresh
+  tags:
+    - dbt-runner
+  only:
+    variables:
+      - $RUN_FULL_REFRESH
+  script:
+    - dbt run --full-refresh --models $RUN_FULL_REFRESH --profiles-dir ./profiles --target prod 
